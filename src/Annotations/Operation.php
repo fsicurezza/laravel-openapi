@@ -30,8 +30,7 @@ class Operation
         $this->id = $values['id'] ?? null;
         $this->tags = empty($values['tags']) ? null : (\is_array($values['tags']) ? $values['tags'] : [$values['tags']]);
         $this->method = $values['method'] ?? null;
-        if (!empty($values['security']))
-        {
+        if (!empty($values['security'])) {
             $this->security = class_exists($values['security']) ? $values['security'] : app()->getNamespace().'OpenApi\\SecurityScheme\\'.$values['security'];
 
             if (! is_a($this->security, SecuritySchemeFactory::class, true)) {
@@ -39,5 +38,4 @@ class Operation
             }
         }
     }
-
 }

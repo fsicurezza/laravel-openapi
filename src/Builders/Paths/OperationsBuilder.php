@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use Vyuldashev\LaravelOpenApi\Annotations\Operation as OperationAnnotation;
 use Vyuldashev\LaravelOpenApi\Builders\ExtensionsBuilder;
 use Vyuldashev\LaravelOpenApi\Builders\Paths\Operation\CallbacksBuilder;
+use Vyuldashev\LaravelOpenApi\Builders\Paths\Operation\OperationBuilder;
 use Vyuldashev\LaravelOpenApi\Builders\Paths\Operation\ParametersBuilder;
 use Vyuldashev\LaravelOpenApi\Builders\Paths\Operation\RequestBodyBuilder;
 use Vyuldashev\LaravelOpenApi\Builders\Paths\Operation\ResponsesBuilder;
@@ -19,6 +20,7 @@ class OperationsBuilder
 {
     protected $callbacksBuilder;
     protected $parametersBuilder;
+    protected $operationBuilder;
     protected $requestBodyBuilder;
     protected $responsesBuilder;
     protected $extensionsBuilder;
@@ -26,12 +28,14 @@ class OperationsBuilder
     public function __construct(
         CallbacksBuilder $callbacksBuilder,
         ParametersBuilder $parametersBuilder,
+        OperationBuilder $operationBuilder,
         RequestBodyBuilder $requestBodyBuilder,
         ResponsesBuilder $responsesBuilder,
         ExtensionsBuilder $extensionsBuilder
     ) {
         $this->callbacksBuilder = $callbacksBuilder;
         $this->parametersBuilder = $parametersBuilder;
+        $this->operationBuilder = $operationBuilder;
         $this->requestBodyBuilder = $requestBodyBuilder;
         $this->responsesBuilder = $responsesBuilder;
         $this->extensionsBuilder = $extensionsBuilder;
@@ -51,9 +55,7 @@ class OperationsBuilder
             $actionAnnotations = collect($route->actionAnnotations);
 
             /** @var OperationAnnotation $operationAnnotation */
-            $operationAnnotation = $actionAnnotations->first(static function ($annotation) {
-                return $annotation instanceof OperationAnnotation;
-            });
+            $operationAnnotation = $this->operationBuilder->build($route);
 
             $operationId = optional($operationAnnotation)->id;
             $tags = $operationAnnotation->tags ?? [];
@@ -73,11 +75,8 @@ class OperationsBuilder
                 ->requestBody($requestBody)
                 ->responses(...$responses)
                 ->callbacks(...$callbacks);
-            if (!empty($operationAnnotation->security))
-            {
-                $securitySchema = app($operationAnnotation->security)->build();
-                $securityRequirement = SecurityRequirement::create()->securityScheme($securitySchema);
-                $operation = $operation->security($securityRequirement);
+            if (!empty($operationAnnotation->security)) {
+                $operation = $operation->security($operationAnnotation->security);
             }
 
             $this->extensionsBuilder->build($operation, $actionAnnotations);
