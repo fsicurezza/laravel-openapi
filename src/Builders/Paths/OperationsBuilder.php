@@ -4,6 +4,7 @@ namespace Vyuldashev\LaravelOpenApi\Builders\Paths;
 
 use GoldSpecDigital\ObjectOrientedOAS\Exceptions\InvalidArgumentException;
 use GoldSpecDigital\ObjectOrientedOAS\Objects\Operation;
+use GoldSpecDigital\ObjectOrientedOAS\Objects\SecurityRequirement;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Vyuldashev\LaravelOpenApi\Annotations\Operation as OperationAnnotation;
@@ -72,6 +73,12 @@ class OperationsBuilder
                 ->requestBody($requestBody)
                 ->responses(...$responses)
                 ->callbacks(...$callbacks);
+            if (!empty($operationAnnotation->security))
+            {
+                $securitySchema = app($operationAnnotation->security)->build();
+                $securityRequirement = SecurityRequirement::create()->securityScheme($securitySchema);
+                $operation = $operation->security($securityRequirement);
+            }
 
             $this->extensionsBuilder->build($operation, $actionAnnotations);
 
